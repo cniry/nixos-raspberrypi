@@ -4,10 +4,19 @@ description: Install Nix and set up the Nix configuration
 runs:
   using: composite
   steps:
+    - name: Remove impure Nix home placeholder
+      shell: bash
+      run: |
+        if [ -d /homeless-shelter ]; then
+          rm -rf /homeless-shelter
+        fi
+
     - name: Install Nix
-      if: ${{ runner.environment != 'self-hosted' }}
       uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
       with:
+        # The self-hosted RPi runners execute Actions as root. Use the daemon
+        # installer so Nix builds run under nixbld users instead of root.
+        install_options: --daemon
         extra_nix_config: |
           extra-experimental-features = nix-command flakes
 
@@ -16,16 +25,9 @@ runs:
           extra-substituters = https://cniry-nixos-raspberrypi-5.cachix.org
           extra-trusted-public-keys = cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY=
 
-    - name: Configure existing Nix
-      if: ${{ runner.environment == 'self-hosted' }}
+    - name: Remove impure Nix home placeholder after install
       shell: bash
       run: |
-        {
-          echo "NIX_CONFIG<<EOF"
-          echo "extra-experimental-features = nix-command flakes"
-          echo "accept-flake-config = false"
-          echo "connect-timeout = 5"
-          echo "extra-substituters = https://cniry-nixos-raspberrypi-5.cachix.org"
-          echo "extra-trusted-public-keys = cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY="
-          echo "EOF"
-        } >> "$GITHUB_ENV"
+        if [ -d /homeless-shelter ]; then
+          rm -rf /homeless-shelter
+        fi

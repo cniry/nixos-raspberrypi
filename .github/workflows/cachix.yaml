@@ -8,6 +8,9 @@ concurrency:
   group: build-to-cachix
   cancel-in-progress: false
 
+env:
+  USER: root
+
 jobs:
   build-raspberrypi-kernel:
     strategy:
@@ -23,14 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
-          authtoken: ${{ secrets.cachix_auth_token }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.linux_rpi${{ matrix.version }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.linux_rpi${{ matrix.version }}
       - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel
       - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
 
@@ -66,14 +71,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.${{ matrix.package }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-vendor-packages-2:
     needs: build-vendor-packages-1
@@ -93,14 +100,16 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.${{ matrix.package }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-installer-system:
     needs:
@@ -119,11 +128,13 @@ jobs:
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
-          authtoken: ${{ secrets.cachix_auth_token }}
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachixArgs: -j2
       - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.system.build.toplevel
