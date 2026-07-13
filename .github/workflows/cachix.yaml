@@ -16,9 +16,9 @@ jobs:
 
       matrix:
         # ~1.5 hours per job—well under the 6-hour per-job time limit.
-        version: ["02", "3", "4", "5"]
+        version: ["5"]
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -61,7 +61,7 @@ jobs:
           - libpisp # ~1 minutes
           # - libraspberrypi
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -88,7 +88,7 @@ jobs:
           - ffmpeg_8
           - vlc
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -112,9 +112,9 @@ jobs:
       fail-fast: false
 
       matrix:
-        version: ["02", "3", "4", "5"]
+        version: ["5"]
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0

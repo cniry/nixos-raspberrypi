@@ -5,6 +5,7 @@ runs:
   using: composite
   steps:
     - name: Install Nix
+      if: ${{ runner.environment != 'self-hosted' }}
       uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
       with:
         extra_nix_config: |
@@ -15,3 +16,16 @@ runs:
           extra-substituters = https://cniry-nixos-raspberrypi-5.cachix.org
           extra-trusted-public-keys = cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY=
 
+    - name: Configure existing Nix
+      if: ${{ runner.environment == 'self-hosted' }}
+      shell: bash
+      run: |
+        {
+          echo "NIX_CONFIG<<EOF"
+          echo "extra-experimental-features = nix-command flakes"
+          echo "accept-flake-config = false"
+          echo "connect-timeout = 5"
+          echo "extra-substituters = https://cniry-nixos-raspberrypi-5.cachix.org"
+          echo "extra-trusted-public-keys = cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY="
+          echo "EOF"
+        } >> "$GITHUB_ENV"
