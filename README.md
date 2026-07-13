@@ -44,10 +44,10 @@ inputs = {
 # Optional: Binary cache for the flake
 nixConfig = {
   extra-substituters = [
-    "https://nixos-raspberrypi.cachix.org"
+    "https://cniry-nixos-raspberrypi-5.cachix.org"
   ];
   extra-trusted-public-keys = [
-    "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+    "cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY="
   ];
 };
 ```
