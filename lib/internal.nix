@@ -41,7 +41,7 @@
     { config, ... }:
     {
       # the only fully supported architecture
-      nixpkgs.hostPlatform = "aarch64-linux";
+      nixpkgs.hostPlatform = lib.mkDefault "aarch64-linux";
 
       imports = with self.nixosModules; [
         # All RPi and RPi-optimised packages to be available in `pkgs.rpi`

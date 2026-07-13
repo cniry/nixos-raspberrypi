@@ -8,6 +8,11 @@
 {
   imports = [ ../raspberrypi.nix ];
 
+  nixpkgs.hostPlatform = lib.mkForce {
+    system = "aarch64-linux";
+    gcc.cpu = "cortex-a76";
+  };
+
   boot.loader.raspberry-pi = {
     variant = "5";
     bootloader = lib.mkDefault "kernelboot";
