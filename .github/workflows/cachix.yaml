@@ -10,6 +10,7 @@ concurrency:
 
 env:
   USER: root
+  NIX_BUILD_FLAGS: --print-build-logs --log-lines 200 --max-jobs 1 --cores 4
 
 jobs:
   build-raspberrypi-kernel:
@@ -35,9 +36,9 @@ jobs:
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachixArgs: -j2
-      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.linux_rpi${{ matrix.version }}
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.linux_rpi${{ matrix.version }}
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
 
   build-vendor-packages-1:
     strategy:
@@ -80,7 +81,7 @@ jobs:
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachixArgs: -j2
-      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.${{ matrix.package }}
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-vendor-packages-2:
     needs: build-vendor-packages-1
@@ -109,7 +110,7 @@ jobs:
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachixArgs: -j2
-      - run: nix --accept-flake-config build .#rpi5Packages.aarch64-linux.${{ matrix.package }}
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-installer-system:
     needs:
@@ -137,4 +138,4 @@ jobs:
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           cachixArgs: -j2
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.system.build.toplevel
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.system.build.toplevel
