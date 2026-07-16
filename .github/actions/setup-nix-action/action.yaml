@@ -16,7 +16,9 @@ runs:
       with:
         # The self-hosted RPi runners execute Actions as root. Use the daemon
         # installer so Nix builds run under nixbld users instead of root.
-        install_options: --daemon
+        # Do not edit shell profiles on persistent runners; stale
+        # *.backup-before-nix files make the upstream installer fail.
+        install_options: --daemon --no-modify-profile
         extra_nix_config: |
           extra-experimental-features = nix-command flakes
 
