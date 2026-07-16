@@ -58,6 +58,7 @@
           inherit localSystem;
           overlays = [
             self.overlays.pkgs
+            self.overlays.python-bootstrap
 
             self.overlays.bootloader
             self.overlays.vendor-kernel
@@ -202,6 +203,7 @@
         bootloader = import ./overlays/bootloader.nix;
 
         pkgs = import ./overlays/pkgs.nix;
+        python-bootstrap = import ./overlays/python-bootstrap.nix;
         vendor-pkgs = import ./overlays/vendor-pkgs.nix;
         jemalloc-page-size-16k = import ./overlays/jemalloc-page-size-16k.nix;
 
