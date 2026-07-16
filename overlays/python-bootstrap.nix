@@ -53,6 +53,7 @@ final: prev: {
                 ${python.interpreter} -m installer \
                   --destdir "$out" --prefix "" dist/*.whl
 
+              chmod +x "$out/bin/pyproject-build"
               wrapProgram $out/bin/pyproject-build \
                 --prefix PYTHONPATH : "$out/${sitePkgs}" \
                 --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${sitePkgs}" \
