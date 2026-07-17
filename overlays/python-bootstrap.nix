@@ -7,6 +7,12 @@ final: prev: {
         sitePkgs = python.sitePackages;
         bootstrapSitePkgs = "usr/${sitePkgs}";
         installerSrc = python-prev.bootstrap.installer.src;
+        linkBootstrapSitePackages = ''
+          if [ -d "$out/${bootstrapSitePkgs}" ] && [ ! -e "$out/${sitePkgs}" ]; then
+            mkdir -p "$(dirname "$out/${sitePkgs}")"
+            ln -s "$out/${bootstrapSitePkgs}" "$out/${sitePkgs}"
+          fi
+        '';
 
         buildBootstrapPythonModule =
           basePackage: attrs:
@@ -33,6 +39,8 @@ final: prev: {
                   ${python.interpreter} -m installer \
                     --destdir "$out" --prefix "" dist/*.whl
 
+                ${linkBootstrapSitePackages}
+
                 runHook postInstall
               '';
             }
@@ -55,6 +63,8 @@ final: prev: {
               PYTHONPATH="${installerSrc}/src" \
                 ${python.interpreter} -m installer \
                   --destdir "$out" --prefix "" dist/*.whl
+
+              ${linkBootstrapSitePackages}
 
               rm -f "$out/bin/pyproject-build"
               makeWrapper ${python.interpreter} "$out/bin/pyproject-build" \
