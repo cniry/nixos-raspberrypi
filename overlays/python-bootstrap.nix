@@ -5,6 +5,7 @@ final: prev: {
       let
         python = python-final.python;
         sitePkgs = python.sitePackages;
+        bootstrapSitePkgs = "usr/${sitePkgs}";
         installerSrc = python-prev.bootstrap.installer.src;
 
         buildBootstrapPythonModule =
@@ -57,9 +58,13 @@ final: prev: {
               makeWrapper ${python.interpreter} "$out/bin/pyproject-build" \
                 --add-flags "-m build" \
                 --prefix PYTHONPATH : "$out/${sitePkgs}" \
+                --prefix PYTHONPATH : "$out/${bootstrapSitePkgs}" \
                 --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${sitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${bootstrapSitePkgs}" \
                 --prefix PYTHONPATH : "${bootstrap-packaging}/${sitePkgs}" \
-                --prefix PYTHONPATH : "${bootstrap-tomli}/${sitePkgs}"
+                --prefix PYTHONPATH : "${bootstrap-packaging}/${bootstrapSitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-tomli}/${sitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-tomli}/${bootstrapSitePkgs}"
 
               runHook postInstall
             '';
