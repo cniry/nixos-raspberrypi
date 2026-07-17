@@ -53,9 +53,7 @@ final: prev: {
                 ${python.interpreter} -m installer \
                   --destdir "$out" --prefix "" dist/*.whl
 
-              rm -f "$out/bin/pyproject-build"
-              makeWrapper ${python.interpreter} "$out/bin/pyproject-build" \
-                --add-flags "-m build" \
+              wrapProgram "$out/bin/pyproject-build" \
                 --prefix PYTHONPATH : "$out/${sitePkgs}" \
                 --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${sitePkgs}" \
                 --prefix PYTHONPATH : "${bootstrap-packaging}/${sitePkgs}" \
