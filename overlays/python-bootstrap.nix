@@ -24,6 +24,8 @@ final: prev: {
                 runHook postBuild
               '';
 
+              dontCheckRuntimeDeps = true;
+
               installPhase = ''
                 runHook preInstall
 
