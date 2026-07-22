@@ -41,6 +41,9 @@ jobs:
       - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
 
   build-vendor-packages-1:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     strategy:
       # Continue with the remaining packages if one fails
       fail-fast: false
@@ -84,6 +87,9 @@ jobs:
       - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-vendor-packages-2:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     needs: build-vendor-packages-1
 
     strategy:
@@ -113,6 +119,9 @@ jobs:
       - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-installer-system:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     needs:
       - build-raspberrypi-kernel
       - build-vendor-packages-1
