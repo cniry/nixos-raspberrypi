@@ -6,13 +6,19 @@ final: prev: {
         python = python-final.python;
         sitePkgs = python.sitePackages;
         bootstrapSitePkgs = "usr/${sitePkgs}";
-        installerSrc = python-prev.bootstrap.installer.src;
         linkBootstrapSitePackages = ''
           if [ -d "$out/${bootstrapSitePkgs}" ] && [ ! -e "$out/${sitePkgs}" ]; then
             mkdir -p "$(dirname "$out/${sitePkgs}")"
             ln -s "$out/${bootstrapSitePkgs}" "$out/${sitePkgs}"
           fi
         '';
+        withBootstrapSitePackages =
+          package:
+          package.overrideAttrs (old: {
+            postInstall = (old.postInstall or "") + linkBootstrapSitePackages;
+          });
+
+        bootstrap-installer = withBootstrapSitePackages python-prev.bootstrap.installer;
 
         buildBootstrapPythonModule =
           basePackage: attrs:
@@ -35,7 +41,7 @@ final: prev: {
               installPhase = ''
                 runHook preInstall
 
-                PYTHONPATH="${installerSrc}/src" \
+                PYTHONPATH="${bootstrap-installer}/${sitePkgs}" \
                   ${python.interpreter} -m installer \
                     --destdir "$out" --prefix "" dist/*.whl
 
@@ -53,6 +59,8 @@ final: prev: {
       in
       {
         bootstrap = python-prev.bootstrap // {
+          installer = bootstrap-installer;
+
           packaging = bootstrap-packaging;
 
           build = buildBootstrapPythonModule python-prev.build {
@@ -60,7 +68,7 @@ final: prev: {
             installPhase = ''
               runHook preInstall
 
-              PYTHONPATH="${installerSrc}/src" \
+              PYTHONPATH="${bootstrap-installer}/${sitePkgs}" \
                 ${python.interpreter} -m installer \
                   --destdir "$out" --prefix "" dist/*.whl
 
