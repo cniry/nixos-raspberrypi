@@ -4,13 +4,48 @@ description: Install Nix and set up the Nix configuration
 runs:
   using: composite
   steps:
+    - name: Remove impure Nix home placeholder
+      shell: bash
+      run: |
+        if [ -d /homeless-shelter ]; then
+          rm -rf /homeless-shelter
+        fi
+
+    - name: Archive stale Nix installer backups
+      shell: bash
+      run: |
+        backup_dir="/tmp/nix-installer-backups-${GITHUB_RUN_ID:-manual}-${GITHUB_RUN_ATTEMPT:-0}"
+        for backup in \
+          /etc/bashrc.backup-before-nix \
+          /etc/profile.d/nix.sh.backup-before-nix \
+          /etc/zshrc.backup-before-nix \
+          /etc/bash.bashrc.backup-before-nix
+        do
+          if [ -e "$backup" ]; then
+            mkdir -p "$backup_dir"
+            mv "$backup" "$backup_dir/"
+          fi
+        done
+
     - name: Install Nix
       uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
       with:
+        # The self-hosted RPi runners execute Actions as root. Use the daemon
+        # installer so Nix builds run under nixbld users instead of root.
+        # Do not edit shell profiles on persistent runners; stale
+        # *.backup-before-nix files make the upstream installer fail.
+        install_options: --daemon --no-modify-profile
         extra_nix_config: |
           extra-experimental-features = nix-command flakes
 
           accept-flake-config = false
           connect-timeout = 5
-          extra-substituters = https://nixos-raspberrypi.cachix.org
-          extra-trusted-public-keys = nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI=
+          extra-substituters = https://cniry-nixos-raspberrypi-5.cachix.org
+          extra-trusted-public-keys = cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY=
+
+    - name: Remove impure Nix home placeholder after install
+      shell: bash
+      run: |
+        if [ -d /homeless-shelter ]; then
+          rm -rf /homeless-shelter
+        fi

@@ -3,10 +3,10 @@
 
   nixConfig = {
     extra-substituters = [
-      "https://nixos-raspberrypi.cachix.org"
+      "https://cniry-nixos-raspberrypi-5.cachix.org"
     ];
     extra-trusted-public-keys = [
-      "nixos-raspberrypi.cachix.org-1:4iMO9LXa8BqhU+Rpg6LQKiGa2lsNh/j2oiYLNOQ5sPI="
+      "cniry-nixos-raspberrypi-5.cachix.org-1:RhtIjevNLLzCritlR0g09w36gZ4cA3doXAL4x0ZolcY="
     ];
     connect-timeout = 5;
   };
@@ -48,12 +48,17 @@
       ];
       allSystems = nixpkgs.lib.systems.flakeExposed;
       forSystems = systems: f: nixpkgs.lib.genAttrs systems (system: f system);
+      rpi5LocalSystem = {
+        system = "aarch64-linux";
+        gcc.cpu = "cortex-a76";
+      };
       mkRpiPkgs =
-        nixpkgs: system:
+        nixpkgs: localSystem:
         import nixpkgs {
-          inherit system;
+          inherit localSystem;
           overlays = [
             self.overlays.pkgs
+            self.overlays.python-bootstrap
 
             self.overlays.bootloader
             self.overlays.vendor-kernel
@@ -63,7 +68,65 @@
             self.overlays.vendor-pkgs
           ];
         };
-      mkLegacyPackagesFor = nixpkgs: forSystems rpiSystems (mkRpiPkgs nixpkgs);
+      mkLegacyPackagesFor =
+        nixpkgs: forSystems rpiSystems (system: mkRpiPkgs nixpkgs { inherit system; });
+      mkPackageSet = pkgs: {
+        ffmpeg_4 = pkgs.ffmpeg_4;
+        ffmpeg_6 = pkgs.ffmpeg_6;
+        ffmpeg_7 = pkgs.ffmpeg_7;
+        ffmpeg_7-headless = pkgs.ffmpeg_7-headless;
+        ffmpeg_8 = pkgs.ffmpeg_8;
+        ffmpeg_8-headless = pkgs.ffmpeg_8-headless;
+
+        kodi = pkgs.kodi;
+        kodi-gbm = pkgs.kodi-gbm;
+        kodi-wayland = pkgs.kodi-wayland;
+
+        libcamera = pkgs.libcamera;
+        libpisp = pkgs.libpisp;
+        libraspberrypi = pkgs.libraspberrypi;
+
+        raspberrypi-utils = pkgs.raspberrypi-utils;
+        raspberrypi-udev-rules = (pkgs.callPackage ./pkgs/raspberrypi/udev-rules.nix { });
+        rpicam-apps = pkgs.rpicam-apps;
+
+        vlc = pkgs.vlc;
+
+        # see legacyPackages.<system>.linuxAndFirmware for other versions of
+        # the bundle
+        inherit (pkgs.linuxAndFirmware.default)
+          linux_rpi5
+          linuxPackages_rpi5
+          linux_rpi4
+          linuxPackages_rpi4
+          linux_rpi3
+          linuxPackages_rpi3
+          linux_rpi02
+          linuxPackages_rpi02
+          raspberrypifw
+          raspberrypiWirelessFirmware
+          ;
+
+        argononed = pkgs.callPackage "${inputs.argononed}/OS/nixos/pkg.nix" { };
+
+        pisugar3-kmod =
+          let
+            targetKernel = pkgs.linux_rpi02;
+          in
+          (pkgs.linuxPackagesFor targetKernel).callPackage ./pkgs/pisugar-kmod.nix {
+            pisugarVersion = "3";
+          };
+        pisugar2-kmod =
+          let
+            targetKernel = pkgs.linux_rpi02;
+          in
+          (pkgs.linuxPackagesFor targetKernel).callPackage ./pkgs/pisugar-kmod.nix {
+            pisugarVersion = "2";
+          };
+
+        pisugar-power-manager-rs = pkgs.callPackage ./pkgs/pisugar-power-manager-rs.nix { };
+
+      };
     in
     {
       formatter = forSystems allSystems (system: nixpkgs.legacyPackages.${system}.nixfmt-tree);
@@ -140,6 +203,7 @@
         bootloader = import ./overlays/bootloader.nix;
 
         pkgs = import ./overlays/pkgs.nix;
+        python-bootstrap = import ./overlays/python-bootstrap.nix;
         vendor-pkgs = import ./overlays/vendor-pkgs.nix;
         jemalloc-page-size-16k = import ./overlays/jemalloc-page-size-16k.nix;
 
@@ -158,69 +222,10 @@
       # * binary cache is generated from this package set
       legacyPackages = mkLegacyPackagesFor nixpkgs;
 
-      packages = forSystems rpiSystems (
-        system:
-        let
-          pkgs = self.legacyPackages.${system};
-        in
-        {
-          ffmpeg_4 = pkgs.ffmpeg_4;
-          ffmpeg_6 = pkgs.ffmpeg_6;
-          ffmpeg_7 = pkgs.ffmpeg_7;
-          ffmpeg_7-headless = pkgs.ffmpeg_7-headless;
-          ffmpeg_8 = pkgs.ffmpeg_8;
-          ffmpeg_8-headless = pkgs.ffmpeg_8-headless;
+      packages = forSystems rpiSystems (system: mkPackageSet self.legacyPackages.${system});
 
-          kodi = pkgs.kodi;
-          kodi-gbm = pkgs.kodi-gbm;
-          kodi-wayland = pkgs.kodi-wayland;
-
-          libcamera = pkgs.libcamera;
-          libpisp = pkgs.libpisp;
-          libraspberrypi = pkgs.libraspberrypi;
-
-          raspberrypi-utils = pkgs.raspberrypi-utils;
-          raspberrypi-udev-rules = (pkgs.callPackage ./pkgs/raspberrypi/udev-rules.nix { });
-          rpicam-apps = pkgs.rpicam-apps;
-
-          vlc = pkgs.vlc;
-
-          # see legacyPackages.<system>.linuxAndFirmware for other versions of
-          # the bundle
-          inherit (pkgs.linuxAndFirmware.default)
-            linux_rpi5
-            linuxPackages_rpi5
-            linux_rpi4
-            linuxPackages_rpi4
-            linux_rpi3
-            linuxPackages_rpi3
-            linux_rpi02
-            linuxPackages_rpi02
-            raspberrypifw
-            raspberrypiWirelessFirmware
-            ;
-
-          argononed = pkgs.callPackage "${inputs.argononed}/OS/nixos/pkg.nix" { };
-
-          pisugar3-kmod =
-            let
-              targetKernel = pkgs.linux_rpi02;
-            in
-            (pkgs.linuxPackagesFor targetKernel).callPackage ./pkgs/pisugar-kmod.nix {
-              pisugarVersion = "3";
-            };
-          pisugar2-kmod =
-            let
-              targetKernel = pkgs.linux_rpi02;
-            in
-            (pkgs.linuxPackagesFor targetKernel).callPackage ./pkgs/pisugar-kmod.nix {
-              pisugarVersion = "2";
-            };
-
-          pisugar-power-manager-rs = pkgs.callPackage ./pkgs/pisugar-power-manager-rs.nix { };
-
-        }
-      );
+      rpi5LegacyPackages.aarch64-linux = mkRpiPkgs nixpkgs rpi5LocalSystem;
+      rpi5Packages.aarch64-linux = mkPackageSet self.rpi5LegacyPackages.aarch64-linux;
 
       nixosConfigurations =
         let

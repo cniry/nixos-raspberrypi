@@ -8,17 +8,22 @@
 {
   imports = [ ../raspberrypi.nix ];
 
+  nixpkgs.hostPlatform = lib.mkForce {
+    system = "aarch64-linux";
+    gcc.cpu = "cortex-a76";
+  };
+
   boot.loader.raspberry-pi = {
     variant = "5";
     bootloader = lib.mkDefault "kernelboot";
     firmwarePackage =
       lib.mkDefault
-        nixos-raspberrypi.packages.${pkgs.stdenv.hostPlatform.system}.raspberrypifw;
+        nixos-raspberrypi.rpi5Packages.${pkgs.stdenv.hostPlatform.system}.raspberrypifw;
   };
 
   boot.kernelPackages =
     lib.mkDefault
-      nixos-raspberrypi.packages.${pkgs.stdenv.hostPlatform.system}.linuxPackages_rpi5;
+      nixos-raspberrypi.rpi5Packages.${pkgs.stdenv.hostPlatform.system}.linuxPackages_rpi5;
   boot.initrd.availableKernelModules = [
     "nvme" # nvme drive connected with pcie
   ];

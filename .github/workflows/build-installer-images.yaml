@@ -5,9 +5,12 @@ on:
   schedule:
     - cron: "0 0 * * 2" # run at 00:00 every Tuesday
 
+env:
+  USER: root
+
 jobs:
   build-installer-images:
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
     strategy:
       # Continue with the remaining packages if one fails
       fail-fast: false

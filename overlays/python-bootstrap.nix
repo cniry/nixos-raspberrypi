@@ -1,0 +1,96 @@
+final: prev: {
+  pythonPackagesExtensions = prev.pythonPackagesExtensions ++ [
+    (
+      python-final: python-prev:
+      let
+        python = python-final.python;
+        sitePkgs = python.sitePackages;
+        bootstrapSitePkgs = "usr/${sitePkgs}";
+        linkBootstrapSitePackages = ''
+          if [ -d "$out/${bootstrapSitePkgs}" ] && [ ! -e "$out/${sitePkgs}" ]; then
+            mkdir -p "$(dirname "$out/${sitePkgs}")"
+            ln -s "$out/${bootstrapSitePkgs}" "$out/${sitePkgs}"
+          fi
+        '';
+        withBootstrapSitePackages =
+          package:
+          package.overrideAttrs (old: {
+            postInstall = (old.postInstall or "") + linkBootstrapSitePackages;
+          });
+
+        bootstrap-installer = withBootstrapSitePackages python-prev.bootstrap.installer;
+
+        buildBootstrapPythonModule =
+          basePackage: attrs:
+          final.stdenv.mkDerivation (
+            {
+              pname = "${python.libPrefix}-bootstrap-${basePackage.pname}";
+              inherit (basePackage) version src meta;
+
+              buildPhase = ''
+                runHook preBuild
+
+                PYTHONPATH="${python-prev.bootstrap.flit-core}/${sitePkgs}" \
+                  ${python.interpreter} -m flit_core.wheel
+
+                runHook postBuild
+              '';
+
+              dontCheckRuntimeDeps = true;
+
+              installPhase = ''
+                runHook preInstall
+
+                PYTHONPATH="${bootstrap-installer}/${sitePkgs}" \
+                  ${python.interpreter} -m installer \
+                    --destdir "$out" --prefix "" dist/*.whl
+
+                ${linkBootstrapSitePackages}
+
+                runHook postInstall
+              '';
+            }
+            // attrs
+          );
+
+        bootstrap-packaging = buildBootstrapPythonModule python-prev.packaging { };
+        bootstrap-pyproject-hooks = buildBootstrapPythonModule python-prev.pyproject-hooks { };
+        bootstrap-tomli = buildBootstrapPythonModule python-prev.tomli { };
+      in
+      {
+        bootstrap = python-prev.bootstrap // {
+          installer = bootstrap-installer;
+
+          packaging = bootstrap-packaging;
+
+          build = buildBootstrapPythonModule python-prev.build {
+            nativeBuildInputs = [ final.makeWrapper ];
+            installPhase = ''
+              runHook preInstall
+
+              PYTHONPATH="${bootstrap-installer}/${sitePkgs}" \
+                ${python.interpreter} -m installer \
+                  --destdir "$out" --prefix "" dist/*.whl
+
+              ${linkBootstrapSitePackages}
+
+              rm -f "$out/bin/pyproject-build"
+              makeWrapper ${python.interpreter} "$out/bin/pyproject-build" \
+                --add-flags "-m build" \
+                --prefix PYTHONPATH : "$out/${sitePkgs}" \
+                --prefix PYTHONPATH : "$out/${bootstrapSitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${sitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-pyproject-hooks}/${bootstrapSitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-packaging}/${sitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-packaging}/${bootstrapSitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-tomli}/${sitePkgs}" \
+                --prefix PYTHONPATH : "${bootstrap-tomli}/${bootstrapSitePkgs}"
+
+              runHook postInstall
+            '';
+          };
+        };
+      }
+    )
+  ];
+}

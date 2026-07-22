@@ -8,6 +8,10 @@ concurrency:
   group: build-to-cachix
   cancel-in-progress: false
 
+env:
+  USER: root
+  NIX_BUILD_FLAGS: --print-build-logs --log-lines 200 --max-jobs 1 --cores 4
+
 jobs:
   build-raspberrypi-kernel:
     strategy:
@@ -16,25 +20,30 @@ jobs:
 
       matrix:
         # ~1.5 hours per job—well under the 6-hour per-job time limit.
-        version: ["02", "3", "4", "5"]
+        version: ["5"]
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
-          authtoken: ${{ secrets.cachix_auth_token }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.linux_rpi${{ matrix.version }}
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.linux_rpi${{ matrix.version }}
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.boot.kernelPackages.kernel.modules
 
   build-vendor-packages-1:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     strategy:
       # Continue with the remaining packages if one fails
       fail-fast: false
@@ -61,21 +70,26 @@ jobs:
           - libpisp # ~1 minutes
           # - libraspberrypi
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.${{ matrix.package }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-vendor-packages-2:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     needs: build-vendor-packages-1
 
     strategy:
@@ -88,21 +102,26 @@ jobs:
           - ffmpeg_8
           - vlc
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-      - run: nix --accept-flake-config build .#packages.aarch64-linux.${{ matrix.package }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#rpi5Packages.aarch64-linux.${{ matrix.package }}
 
   build-installer-system:
+    # Temporarily disabled while debugging build-raspberrypi-kernel.
+    if: ${{ false }}
+
     needs:
       - build-raspberrypi-kernel
       - build-vendor-packages-1
@@ -112,18 +131,20 @@ jobs:
       fail-fast: false
 
       matrix:
-        version: ["02", "3", "4", "5"]
+        version: ["5"]
 
-    runs-on: ubuntu-24.04-arm
+    runs-on: [self-hosted, rpi5]
 
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
       - uses: ./.github/actions/setup-nix-action
-      - uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
+      - name: Configure Cachix
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17
         with:
           name: "${{ secrets.CACHIX_CACHE_NAME }}"
           # # if you chose signing key for write access
           # signingkey: "${{ secrets.cachix_signing_key }}"
           # # if you chose api tokens for write access or if you have a private cache
-          authtoken: ${{ secrets.cachix_auth_token }}
-      - run: nix --accept-flake-config build .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.system.build.toplevel
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachixArgs: -j2
+      - run: nix --accept-flake-config build $NIX_BUILD_FLAGS .#nixosConfigurations.rpi${{ matrix.version }}-installer.config.system.build.toplevel
